@@ -1,0 +1,45 @@
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'IBM Plex Sans', sans-serif; }
+.mono { font-family: 'IBM Plex Mono', monospace; }
+html, body, #root { min-height: 100vh; }
+body { background: #0B0F14; color: #E6EDF3; min-height: 100vh; padding: 32px 24px; }
+
+.header { max-width: 780px; margin: 0 auto 28px; }
+.eyebrow { display: flex; align-items: center; gap: 6px; font-size: 12px; letter-spacing: 0.08em; color: #F5A623; font-weight: 600; margin-bottom: 8px; }
+h1 { font-size: 24px; font-weight: 600; margin: 0 0 6px; }
+.subtitle { font-size: 14px; color: #8B98A9; }
+
+.grid { max-width: 780px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+
+.panel { background: #141B24; border: 1px solid #253141; border-radius: 12px; padding: 20px; }
+.panel-label { font-size: 12px; letter-spacing: 0.06em; color: #8B98A9; font-weight: 600; margin-bottom: 16px; text-transform: uppercase; }
+
+.field { margin-bottom: 16px; }
+label { display: block; font-size: 13px; color: #B8C2CE; margin-bottom: 6px; }
+input[type="number"], select {
+  background: #0F1621; border: 1px solid #253141; color: #E6EDF3;
+  border-radius: 6px; padding: 8px 10px; font-size: 14px; width: 100%;
+}
+input[type="range"] { -webkit-appearance: none; width: 100%; height: 3px; background: #253141; border-radius: 2px; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #F5A623; cursor: pointer; margin-top: -5.5px; }
+
+.phase-row { display: flex; gap: 8px; }
+.phase-btn { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #253141; background: #0F1621; color: #8B98A9; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.15s; }
+.phase-btn.active { background: rgba(245,166,35,0.12); border-color: #F5A623; color: #F5A623; }
+
+.checkbox-row { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.checkbox-row input { width: 16px; height: 16px; }
+
+.note { display: flex; gap: 8px; font-size: 12px; color: #8B98A9; background: #0F1621; border: 1px solid #253141; border-radius: 8px; padding: 10px; line-height: 1.5; }
+
+.gauge-wrap { display: flex; justify-content: center; padding: 8px 0 4px; }
+.gauge-pct { text-align: center; margin-top: -8px; margin-bottom: 12px; }
+.gauge-pct .val { font-size: 24px; font-weight: 600; }
+.gauge-pct .lbl { font-size: 12px; color: #8B98A9; }
+
+.result-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #253141; font-size: 13px; }
+.result-row.last { border-bottom: none; }
+.result-label { display: flex; align-items: center; gap: 6px; color: #8B98A9; }
+.result-value { font-weight: 600; font-size: 14px; }
+
+.disclaimer { max-width: 780px; margin: 20px auto 0; font-size: 11.5px; color: #5F6B7A; line-height: 1.6; }
