@@ -2,16 +2,30 @@ import { useMemo, useState } from 'react';
 
 const BREAKER_SIZES = [15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 110, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500, 600];
 
+// Couleurs de l'Academie Polara (theme sombre), en dehors du CSS car
+// utilisees dans des attributs SVG calcules dynamiquement.
+const COLOR_SUCCESS = '#35c98d';
+const COLOR_ORANGE = '#ff450a';
+const COLOR_DANGER = '#e57a68';
+const COLOR_HEADING = '#eef1ff';
+
 function nextBreaker(amps) {
   return BREAKER_SIZES.find((b) => b >= amps) ?? BREAKER_SIZES[BREAKER_SIZES.length - 1];
 }
 
+// Champ numerique en texte libre : permet d'effacer completement le champ
+// et de taper un nouveau nombre sans qu'un "0" residuel reste colle devant
+// (bug classique des inputs type="number" controles par React).
+const NUMBER_RE = /^\d*\.?\d*$/;
+
 export default function App() {
-  const [power, setPower] = useState(40);
+  const [powerInput, setPowerInput] = useState('40');
   const [voltage, setVoltage] = useState(600);
   const [phase, setPhase] = useState('triphase');
   const [pf, setPf] = useState(0.98);
   const [continuous, setContinuous] = useState(true);
+
+  const power = parseFloat(powerInput) || 0;
 
   const results = useMemo(() => {
     const P = power * 1000;
@@ -22,7 +36,7 @@ export default function App() {
     return { rawCurrent, designCurrent, breaker, loadPct };
   }, [power, voltage, phase, pf, continuous]);
 
-  const zoneColor = results.loadPct < 60 ? '#2DD4BF' : results.loadPct < 85 ? '#F5A623' : '#FF5D5D';
+  const zoneColor = results.loadPct < 60 ? COLOR_SUCCESS : results.loadPct < 85 ? COLOR_ORANGE : COLOR_DANGER;
   const needleAngle = -90 + (results.loadPct / 100) * 180;
 
   return (
@@ -40,11 +54,16 @@ export default function App() {
           <div className="field">
             <label>Puissance de la borne (kW)</label>
             <input
-              type="number"
-              value={power}
-              min="0"
-              step="0.5"
-              onChange={(e) => setPower(Number(e.target.value))}
+              type="text"
+              inputMode="decimal"
+              value={powerInput}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (NUMBER_RE.test(v)) setPowerInput(v);
+              }}
+              onBlur={() => {
+                if (powerInput === '' || powerInput === '.') setPowerInput('0');
+              }}
             />
           </div>
 
@@ -83,7 +102,7 @@ export default function App() {
           <div className="field">
             <label>
               Facteur de puissance{' '}
-              <span className="mono" style={{ color: '#F5A623' }}>{pf.toFixed(2)}</span>
+              <span className="mono" style={{ color: COLOR_ORANGE }}>{pf.toFixed(2)}</span>
             </label>
             <input
               type="range"
@@ -117,13 +136,13 @@ export default function App() {
 
           <div className="gauge-wrap">
             <svg width="220" height="130" viewBox="0 0 220 130">
-              <path d="M 20 110 A 90 90 0 0 1 82 27" stroke="#2DD4BF" strokeWidth="14" fill="none" strokeLinecap="round" />
-              <path d="M 82 27 A 90 90 0 0 1 138 27" stroke="#F5A623" strokeWidth="14" fill="none" strokeLinecap="round" />
-              <path d="M 138 27 A 90 90 0 0 1 200 110" stroke="#FF5D5D" strokeWidth="14" fill="none" strokeLinecap="round" />
+              <path d="M 20 110 A 90 90 0 0 1 82 27" stroke={COLOR_SUCCESS} strokeWidth="14" fill="none" strokeLinecap="round" />
+              <path d="M 82 27 A 90 90 0 0 1 138 27" stroke={COLOR_ORANGE} strokeWidth="14" fill="none" strokeLinecap="round" />
+              <path d="M 138 27 A 90 90 0 0 1 200 110" stroke={COLOR_DANGER} strokeWidth="14" fill="none" strokeLinecap="round" />
               <g transform={`rotate(${needleAngle} 110 110)`}>
-                <line x1="110" y1="110" x2="110" y2="35" stroke="#E6EDF3" strokeWidth="3" strokeLinecap="round" />
+                <line x1="110" y1="110" x2="110" y2="35" stroke={COLOR_HEADING} strokeWidth="3" strokeLinecap="round" />
               </g>
-              <circle cx="110" cy="110" r="7" fill="#E6EDF3" />
+              <circle cx="110" cy="110" r="7" fill={COLOR_HEADING} />
             </svg>
           </div>
           <div className="gauge-pct">
@@ -141,11 +160,11 @@ export default function App() {
           </div>
           <div className="result-row last">
             <span className="result-label">⚠️ Disjoncteur recommandé</span>
-            <span className="result-value mono" style={{ color: '#F5A623', fontSize: '18px' }}>{results.breaker} A</span>
+            <span className="result-value mono" style={{ color: COLOR_ORANGE, fontSize: '18px' }}>{results.breaker} A</span>
           </div>
           <div className="result-row last">
             <span className="result-label">🔌 Ampacité minimale du câble</span>
-            <span className="result-value mono" style={{ color: '#2DD4BF', fontSize: '18px' }}>{results.designCurrent.toFixed(1)} A</span>
+            <span className="result-value mono" style={{ color: COLOR_SUCCESS, fontSize: '18px' }}>{results.designCurrent.toFixed(1)} A</span>
           </div>
         </div>
       </div>
