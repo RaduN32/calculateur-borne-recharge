@@ -48,6 +48,9 @@ function NumberField({ label, value, onChange, suffix, placeholder }) {
 }
 
 export default function App() {
+  // Ignore au-dessus de 700px (les deux panneaux sont toujours cote a cote) ;
+  // sur telephone, seul le panneau choisi est affiche (voir .mobile-hidden).
+  const [mobileView, setMobileView] = useState('params'); // 'params' | 'results'
   const [mode, setMode] = useState('direct'); // 'direct' | 'inverse' | 'capacity'
   const [powerInput, setPowerInput] = useState('40');
   const [voltageInput, setVoltageInput] = useState('600');
@@ -117,8 +120,30 @@ export default function App() {
         <div className="subtitle">Calcul du courant nominal, du calibre de disjoncteur, de la puissance maximale et du nombre de bornes installables.</div>
       </div>
 
+      {/* Sur telephone, les deux panneaux empiles depassent l'ecran meme
+          compactes : on n'en affiche qu'un a la fois via ces onglets.
+          N'existent visuellement qu'en dessous de 700px (voir .mobile-tabs
+          dans index.css) — au-dessus, .grid montre toujours les deux a la
+          fois, cote a cote. */}
+      <div className="mobile-tabs">
+        <button
+          type="button"
+          className={`mobile-tab ${mobileView === 'params' ? 'active' : ''}`}
+          onClick={() => setMobileView('params')}
+        >
+          Paramètres
+        </button>
+        <button
+          type="button"
+          className={`mobile-tab ${mobileView === 'results' ? 'active' : ''}`}
+          onClick={() => setMobileView('results')}
+        >
+          Résultats
+        </button>
+      </div>
+
       <div className="grid">
-        <div className="panel">
+        <div className={`panel ${mobileView === 'results' ? 'mobile-hidden' : ''}`}>
           <div className="panel-label">Paramètres</div>
 
           <div className="field">
@@ -128,19 +153,19 @@ export default function App() {
                 className={`phase-btn ${mode === 'direct' ? 'active' : ''}`}
                 onClick={() => setMode('direct')}
               >
-                Puissance d'une borne → Disjoncteur
+                Puissance → Disjoncteur
               </button>
               <button
                 className={`phase-btn ${mode === 'inverse' ? 'active' : ''}`}
                 onClick={() => setMode('inverse')}
               >
-                Disjoncteur → Puissance max d'une borne
+                Disjoncteur → Puissance
               </button>
               <button
                 className={`phase-btn ${mode === 'capacity' ? 'active' : ''}`}
                 onClick={() => setMode('capacity')}
               >
-                Capacité du transfo (kVA) → Nombre de bornes
+                Transfo (kVA) → Nb de bornes
               </button>
             </div>
           </div>
@@ -247,7 +272,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="panel">
+        <div className={`panel ${mobileView === 'params' ? 'mobile-hidden' : ''}`}>
           <div className="panel-label">Résultats</div>
 
           <div className="gauge-wrap">
@@ -269,7 +294,7 @@ export default function App() {
           {mode === 'inverse' && (
             <div className="result-row">
               <span className="result-label">🔋 Puissance maximale de la borne</span>
-              <span className="result-value mono" style={{ color: COLOR_ORANGE, fontSize: '18px' }}>{results.maxPowerKw.toFixed(1)} kW</span>
+              <span className="result-value mono" style={{ color: COLOR_ORANGE, fontSize: '15px' }}>{results.maxPowerKw.toFixed(1)} kW</span>
             </div>
           )}
 
@@ -285,11 +310,11 @@ export default function App() {
               </div>
               <div className="result-row last">
                 <span className="result-label">{mode === 'inverse' ? '⚠️ Disjoncteur utilisé' : '⚠️ Disjoncteur recommandé'}</span>
-                <span className="result-value mono" style={{ color: COLOR_ORANGE, fontSize: '18px' }}>{results.breaker} A</span>
+                <span className="result-value mono" style={{ color: COLOR_ORANGE, fontSize: '15px' }}>{results.breaker} A</span>
               </div>
               <div className="result-row last">
                 <span className="result-label">🔌 Ampacité minimale du câble</span>
-                <span className="result-value mono" style={{ color: COLOR_SUCCESS, fontSize: '18px' }}>{results.designCurrent.toFixed(1)} A</span>
+                <span className="result-value mono" style={{ color: COLOR_SUCCESS, fontSize: '15px' }}>{results.designCurrent.toFixed(1)} A</span>
               </div>
             </>
           )}
@@ -298,7 +323,7 @@ export default function App() {
             <>
               <div className="result-row">
                 <span className="result-label">🔢 Bornes installables</span>
-                <span className="result-value mono" style={{ color: COLOR_ORANGE, fontSize: '18px' }}>{results.count}</span>
+                <span className="result-value mono" style={{ color: COLOR_ORANGE, fontSize: '15px' }}>{results.count}</span>
               </div>
               <div className="result-row">
                 <span className="result-label">🏭 Capacité totale du transfo</span>
@@ -322,7 +347,7 @@ export default function App() {
               </div>
               <div className="result-row last">
                 <span className="result-label">🔌 Capacité restante après installation</span>
-                <span className="result-value mono" style={{ color: COLOR_SUCCESS, fontSize: '18px' }}>{results.remainingAfterKw.toFixed(1)} kW</span>
+                <span className="result-value mono" style={{ color: COLOR_SUCCESS, fontSize: '15px' }}>{results.remainingAfterKw.toFixed(1)} kW</span>
               </div>
               {results.remainingAfterKw > 0 && results.remainingAfterKw < results.perChargerKw && (
                 <div className="note" style={{ marginTop: '12px' }}>
@@ -340,12 +365,19 @@ export default function App() {
         </div>
       </div>
 
-      <div className="disclaimer">
-        Cet outil fournit une estimation basée sur des formules standards (I = P / (√3 × V × FP) en triphasé, kW = kVA × FP).
-        Le calibre final du disjoncteur, le câblage, le calibre AWG et la capacité réelle du transformateur doivent être confirmés
-        selon le Code de l'électricité applicable (CCE/NEC) et validés par un électricien ou ingénieur qualifié, en tenant compte
-        de la longueur des câbles, du mode d'installation, des chutes de tension et de la charge existante réelle du site.
-      </div>
+      {/* <details> plutot qu'un bloc toujours deplie : sur petit telephone,
+          ca rend le texte legal disponible sans lui laisser prendre une
+          place fixe sur chaque ecran. Toujours deplie sur grand ecran via
+          le CSS (voir index.css). */}
+      <details className={`disclaimer ${mobileView === 'params' ? 'mobile-hidden' : ''}`} open>
+        <summary>Avis : estimation à valider par un électricien</summary>
+        <p>
+          Cet outil fournit une estimation basée sur des formules standards (I = P / (√3 × V × FP) en triphasé, kW = kVA × FP).
+          Le calibre final du disjoncteur, le câblage, le calibre AWG et la capacité réelle du transformateur doivent être confirmés
+          selon le Code de l'électricité applicable (CCE/NEC) et validés par un électricien ou ingénieur qualifié, en tenant compte
+          de la longueur des câbles, du mode d'installation, des chutes de tension et de la charge existante réelle du site.
+        </p>
+      </details>
     </>
   );
 }
