@@ -19,8 +19,10 @@ function nextBreaker(amps) {
 const NUMBER_RE = /^\d*\.?\d*$/;
 
 export default function App() {
+  const [mode, setMode] = useState('direct'); // 'direct' (puissance -> disjoncteur) | 'inverse' (disjoncteur -> puissance)
   const [powerInput, setPowerInput] = useState('40');
   const [voltageInput, setVoltageInput] = useState('600');
+  const [breakerInput, setBreakerInput] = useState(60);
   const [phase, setPhase] = useState('triphase');
   const [pf, setPf] = useState(0.98);
   const [continuous, setContinuous] = useState(true);
@@ -29,13 +31,23 @@ export default function App() {
   const voltage = parseFloat(voltageInput) || 0;
 
   const results = useMemo(() => {
+    if (mode === 'inverse') {
+      // Le disjoncteur existant fixe le courant de conception maximal admissible ;
+      // on retire la marge de 125% pour retrouver le courant nominal max, puis la puissance.
+      const breaker = breakerInput;
+      const designCurrent = breaker;
+      const rawCurrent = continuous ? designCurrent / 1.25 : designCurrent;
+      const maxPowerW = voltage <= 0 ? 0 : phase === 'triphase' ? rawCurrent * Math.sqrt(3) * voltage * pf : rawCurrent * voltage * pf;
+      const loadPct = Math.min(100, (rawCurrent / breaker) * 100);
+      return { rawCurrent, designCurrent, breaker, loadPct, maxPowerKw: maxPowerW / 1000 };
+    }
     const P = power * 1000;
     const rawCurrent = voltage <= 0 ? 0 : phase === 'triphase' ? P / (Math.sqrt(3) * voltage * pf) : P / (voltage * pf);
     const designCurrent = continuous ? rawCurrent * 1.25 : rawCurrent;
     const breaker = nextBreaker(designCurrent);
     const loadPct = Math.min(100, (rawCurrent / breaker) * 100);
-    return { rawCurrent, designCurrent, breaker, loadPct };
-  }, [power, voltage, phase, pf, continuous]);
+    return { rawCurrent, designCurrent, breaker, loadPct, maxPowerKw: null };
+  }, [mode, power, voltage, breakerInput, phase, pf, continuous]);
 
   const zoneColor = results.loadPct < 60 ? COLOR_SUCCESS : results.loadPct < 85 ? COLOR_ORANGE : COLOR_DANGER;
   const needleAngle = -90 + (results.loadPct / 100) * 180;
@@ -53,20 +65,49 @@ export default function App() {
           <div className="panel-label">Paramètres du circuit</div>
 
           <div className="field">
-            <label>Puissance de la borne (kW)</label>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={powerInput}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (NUMBER_RE.test(v)) setPowerInput(v);
-              }}
-              onBlur={() => {
-                if (powerInput === '' || powerInput === '.') setPowerInput('0');
-              }}
-            />
+            <label>Sens du calcul</label>
+            <div className="phase-row">
+              <button
+                className={`phase-btn ${mode === 'direct' ? 'active' : ''}`}
+                onClick={() => setMode('direct')}
+              >
+                Puissance → Disjoncteur
+              </button>
+              <button
+                className={`phase-btn ${mode === 'inverse' ? 'active' : ''}`}
+                onClick={() => setMode('inverse')}
+              >
+                Disjoncteur → Puissance
+              </button>
+            </div>
           </div>
+
+          {mode === 'direct' ? (
+            <div className="field">
+              <label>Puissance de la borne (kW)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={powerInput}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (NUMBER_RE.test(v)) setPowerInput(v);
+                }}
+                onBlur={() => {
+                  if (powerInput === '' || powerInput === '.') setPowerInput('0');
+                }}
+              />
+            </div>
+          ) : (
+            <div className="field">
+              <label>Disjoncteur disponible (A)</label>
+              <select value={breakerInput} onChange={(e) => setBreakerInput(Number(e.target.value))}>
+                {BREAKER_SIZES.map((b) => (
+                  <option key={b} value={b}>{b} A</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="field">
             <label>Tension (V)</label>
@@ -153,8 +194,14 @@ export default function App() {
             <div className="lbl">charge du disjoncteur</div>
           </div>
 
+          {mode === 'inverse' && (
+            <div className="result-row">
+              <span className="result-label">🔋 Puissance maximale de la borne</span>
+              <span className="result-value mono" style={{ color: COLOR_ORANGE, fontSize: '18px' }}>{results.maxPowerKw.toFixed(1)} kW</span>
+            </div>
+          )}
           <div className="result-row">
-            <span className="result-label">📟 Courant nominal</span>
+            <span className="result-label">📟 Courant nominal{mode === 'inverse' ? ' max' : ''}</span>
             <span className="result-value mono">{results.rawCurrent.toFixed(1)} A</span>
           </div>
           <div className="result-row">
@@ -162,7 +209,7 @@ export default function App() {
             <span className="result-value mono">{results.designCurrent.toFixed(1)} A</span>
           </div>
           <div className="result-row last">
-            <span className="result-label">⚠️ Disjoncteur recommandé</span>
+            <span className="result-label">{mode === 'inverse' ? '⚠️ Disjoncteur utilisé' : '⚠️ Disjoncteur recommandé'}</span>
             <span className="result-value mono" style={{ color: COLOR_ORANGE, fontSize: '18px' }}>{results.breaker} A</span>
           </div>
           <div className="result-row last">
