@@ -22,23 +22,24 @@ export default function App() {
   const [mode, setMode] = useState('direct'); // 'direct' (puissance -> disjoncteur) | 'inverse' (disjoncteur -> puissance)
   const [powerInput, setPowerInput] = useState('40');
   const [voltageInput, setVoltageInput] = useState('600');
-  const [breakerInput, setBreakerInput] = useState(60);
+  const [breakerInput, setBreakerInput] = useState('60');
   const [phase, setPhase] = useState('triphase');
   const [pf, setPf] = useState(0.98);
   const [continuous, setContinuous] = useState(true);
 
   const power = parseFloat(powerInput) || 0;
   const voltage = parseFloat(voltageInput) || 0;
+  const breakerAmps = parseFloat(breakerInput) || 0;
 
   const results = useMemo(() => {
     if (mode === 'inverse') {
       // Le disjoncteur existant fixe le courant de conception maximal admissible ;
       // on retire la marge de 125% pour retrouver le courant nominal max, puis la puissance.
-      const breaker = breakerInput;
+      const breaker = breakerAmps;
       const designCurrent = breaker;
       const rawCurrent = continuous ? designCurrent / 1.25 : designCurrent;
       const maxPowerW = voltage <= 0 ? 0 : phase === 'triphase' ? rawCurrent * Math.sqrt(3) * voltage * pf : rawCurrent * voltage * pf;
-      const loadPct = Math.min(100, (rawCurrent / breaker) * 100);
+      const loadPct = breaker <= 0 ? 0 : Math.min(100, (rawCurrent / breaker) * 100);
       return { rawCurrent, designCurrent, breaker, loadPct, maxPowerKw: maxPowerW / 1000 };
     }
     const P = power * 1000;
@@ -47,7 +48,7 @@ export default function App() {
     const breaker = nextBreaker(designCurrent);
     const loadPct = Math.min(100, (rawCurrent / breaker) * 100);
     return { rawCurrent, designCurrent, breaker, loadPct, maxPowerKw: null };
-  }, [mode, power, voltage, breakerInput, phase, pf, continuous]);
+  }, [mode, power, voltage, breakerAmps, phase, pf, continuous]);
 
   const zoneColor = results.loadPct < 60 ? COLOR_SUCCESS : results.loadPct < 85 ? COLOR_ORANGE : COLOR_DANGER;
   const needleAngle = -90 + (results.loadPct / 100) * 180;
@@ -100,12 +101,22 @@ export default function App() {
             </div>
           ) : (
             <div className="field">
-              <label>Disjoncteur disponible (A)</label>
-              <select value={breakerInput} onChange={(e) => setBreakerInput(Number(e.target.value))}>
-                {BREAKER_SIZES.map((b) => (
-                  <option key={b} value={b}>{b} A</option>
-                ))}
-              </select>
+              <label>Disjoncteur disponible</label>
+              <div className="input-unit-wrap">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={breakerInput}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (NUMBER_RE.test(v)) setBreakerInput(v);
+                  }}
+                  onBlur={() => {
+                    if (breakerInput === '' || breakerInput === '.') setBreakerInput('0');
+                  }}
+                />
+                <span className="input-unit-suffix">A</span>
+              </div>
             </div>
           )}
 
