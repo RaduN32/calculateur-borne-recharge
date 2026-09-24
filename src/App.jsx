@@ -20,16 +20,17 @@ const NUMBER_RE = /^\d*\.?\d*$/;
 
 export default function App() {
   const [powerInput, setPowerInput] = useState('40');
-  const [voltage, setVoltage] = useState(600);
+  const [voltageInput, setVoltageInput] = useState('600');
   const [phase, setPhase] = useState('triphase');
   const [pf, setPf] = useState(0.98);
   const [continuous, setContinuous] = useState(true);
 
   const power = parseFloat(powerInput) || 0;
+  const voltage = parseFloat(voltageInput) || 0;
 
   const results = useMemo(() => {
     const P = power * 1000;
-    const rawCurrent = phase === 'triphase' ? P / (Math.sqrt(3) * voltage * pf) : P / (voltage * pf);
+    const rawCurrent = voltage <= 0 ? 0 : phase === 'triphase' ? P / (Math.sqrt(3) * voltage * pf) : P / (voltage * pf);
     const designCurrent = continuous ? rawCurrent * 1.25 : rawCurrent;
     const breaker = nextBreaker(designCurrent);
     const loadPct = Math.min(100, (rawCurrent / breaker) * 100);
@@ -69,16 +70,18 @@ export default function App() {
 
           <div className="field">
             <label>Tension (V)</label>
-            <select value={voltage} onChange={(e) => setVoltage(Number(e.target.value))}>
-              <option value="120">120 V</option>
-              <option value="208">208 V</option>
-              <option value="240">240 V</option>
-              <option value="347">347 V</option>
-              <option value="480">480 V</option>
-              <option value="600">600 V</option>
-              <option value="750">750 V</option>
-              <option value="1000">1000 V</option>
-            </select>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={voltageInput}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (NUMBER_RE.test(v)) setVoltageInput(v);
+              }}
+              onBlur={() => {
+                if (voltageInput === '' || voltageInput === '.') setVoltageInput('0');
+              }}
+            />
           </div>
 
           <div className="field">
