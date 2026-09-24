@@ -63,6 +63,8 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .phase-row { display: flex; gap: 8px; }
+.mode-row { display: flex; flex-direction: column; gap: 6px; }
+.mode-row .phase-btn { text-align: left; }
 .phase-btn {
   flex: 1; padding: 9px; border-radius: var(--radius-sm); border: 1px solid var(--line);
   background: var(--surface-2); color: var(--text-muted); cursor: pointer; font-size: 13px;
